@@ -54,3 +54,7 @@
 (package! openapi-yaml-mode
   :recipe (:host github :repo "magoyette/openapi-yaml-mode"
            :files ("openapi-yaml-mode.el")))
+
+(package! eww-layer
+  :recipe (:host github :repo "coljamkop/eww-layer"
+           :files ("funcs.el" "packages.el")))
