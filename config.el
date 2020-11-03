@@ -9,6 +9,19 @@
 (setq user-full-name "Alexander Ushanov"
       user-mail-address "alushanov92@gmail.com")
 
+(setq-default uniquify-buffer-name-style 'forward              ; Uniquify buffer names
+              window-combination-resize t                      ; take new window space from all other windows (not just current)
+              x-stretch-cursor t)                              ; Stretch cursor to the glyph width
+
+(setq undo-limit 80000000                         ; Raise undo-limit to 80Mb
+      evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
+      auto-save-default t                         ; Nobody likes to loose work, I certainly don't
+      inhibit-compacting-font-caches t)           ; When there are lots of glyphs, keep them in memory
+
+(delete-selection-mode 1)                         ; Replace selection when inserting text
+
+
+;; (global-subword-mode 1)                           ; Iterate through CamelCase words
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
 ;; are the three important ones:
 ;;
@@ -56,3 +69,140 @@
 
 
 (add-to-list 'auto-mode-alist '("\\.beancounter\\'" . beancount-mode))
+(after! dap-python
+  (setq dap-auto-show-output nil)
+
+  (setq dap-auto-configure-features '(locals))
+
+  (setq dap-ui-buffer-configurations
+        `((,"*dap-ui-locals*"  . ((side . right) (slot . 1) (window-width . 0.50))) ;; changed this to 0.50
+          (,"*dap-ui-expressions*" . ((side . right) (slot . 2) (window-width . 0.20)))
+          (,"*dap-ui-sessions*" . ((side . right) (slot . 3) (window-width . 0.20)))
+          (,"*dap-ui-breakpoints*" . ((side . left) (slot . 2) (window-width . , 0.20)))
+          (,"*debug-window*" . ((side . bottom) (slot . 3) (window-width . 0.20)))))
+
+
+  (defun my/window-visible (b-name)
+    "Return whether B-NAME is visible."
+    (-> (-compose 'buffer-name 'window-buffer)
+        (-map (window-list))
+        (-contains? b-name)))
+
+  (defun my/show-debug-windows (session)
+    "Show debug windows."
+    (let ((lsp--cur-workspace (dap--debug-session-workspace session)))
+      (save-excursion
+        (unless (my/window-visible dap-ui--locals-buffer)
+          (dap-ui-locals)))))
+
+  (add-hook 'dap-stopped-hook 'my/show-debug-windows)
+
+  (defun my/hide-debug-windows (session)
+    "Hide debug windows when all debug sessions are dead."
+    (unless (-filter 'dap--session-running (dap--get-sessions))
+      (and (get-buffer dap-ui--locals-buffer)
+           (kill-buffer dap-ui--locals-buffer))))
+
+  (add-hook 'dap-terminated-hook 'my/hide-debug-windows)
+
+  )
+
+(after! dap-python
+  (dap-register-debug-template "dap-debug-script"
+                               (list :type "python"
+                                     :args "-i"
+                                     :cwd (lsp-workspace-root)
+                                     ;; :justMyCode :json-false
+                                     ;; :debugOptions ["DebugStdLib" "ShowReturnValue" "RedirectOutput"]
+                                     :program nil ; (expand-file-name "~/git/blabla")
+                                     :request "launch"
+                                     :name "dap-debug-script"))
+
+  (dap-register-debug-template "dap-debug-test"
+                               (list :type "python"
+                                     :cwd (lsp-workspace-root)
+                                     :module "pytest"
+                                     :request "launch"
+                                     :name "dap-debug-test-file"))
+
+  (dap-register-debug-template "dap-debug-bokeh"
+                               (list :type "python"
+                                     :args "--show crewrelief --log-level info"
+                                     :cwd (expand-file-name "~/git/crewrelief/src")
+                                     :program "serve"
+                                     :module "bokeh"
+                                     :request "launch"
+                                     :name "dap-debug-bokeh"))
+
+
+  )
+
+(after! dap-python
+  (defun dap-python-script ()
+    (interactive
+     (dap-debug
+      (list :type "python"
+            :args "-i"
+            :cwd (lsp-workspace-root)
+            :program nil
+            :request "launch"
+            :name "dap-debug-script")))))
+
+(after! dap-python
+  (require 'python-pytest)
+
+  (defun dap-python-test-method-at-point ()
+    (interactive
+       (dap-debug
+        (list :type "python"
+              :args ""
+              :cwd (lsp-workspace-root)
+              :program (concat (buffer-file-name) ":" ":" (python-pytest--current-defun))
+              :module "pytest"
+              :request "launch"
+              :name "dap-debug-test-function")))))
+
+(defadvice! +dap-python-poetry-executable-find-a (orig-fn &rest args)
+  "Use the Python binary from the current virtual environment."
+  :around #'dap-python--pyenv-executable-find
+  (if (getenv "VIRTUAL_ENV")
+      (executable-find (car args))
+    (apply orig-fn args)))
+;; (after! dap-python
+;;   (defun dap-python--pyenv-executable-find (command)
+;;     (concat (getenv "VIRTUAL_ENV") "/bin/python")))
+
+(map! :localleader
+        :map +dap-running-session-mode-map
+      "d" nil)
+
+;; (map! :after dap-mode
+;;     :map dap-mode-map
+;;     :localleader "d" nil)
+
+;; (map! :after dap-mode
+;;     :map python-mode-map
+;;     :localleader
+;;     ;; "d" nil
+;;     (:desc "debug" :prefix "d"
+;;       :desc "Hydra" :n "h" #'dap-hydra
+;;       :desc "Run debug configuration" :n "d" #'dap-debug
+;;       :desc "dap-ui REPL" :n "r" #'dap-ui-repl
+;;       :desc "Debug test function" :n "t" #'dap-python-test-method-at-point
+;;       :desc "Run last debug configuration" :n "l" #'dap-debug-last
+;;       :desc "Toggle breakpoint" :n "b" #'dap-breakpoint-toggle
+;;       :desc "dap continue" :n "c" #'dap-continue
+;;       :desc "dap next" :n "n" #'dap-next
+;;       :desc "Debug script" :n "s" #'dap-python-script
+;;       :desc "dap step in" :n "i" #'dap-step-in
+;;       :desc "dap eval at point" :n "e" #'dap-eval-thing-at-point
+;;       :desc "Disconnect" :n "q" #'dap-disconnect ))
+(use-package lsp-mode
+  :config
+  (lsp-register-custom-settings
+   '(("pyls.plugins.pyls_mypy.enabled" t t)
+     ("pyls.plugins.pyls_mypy.live_mode" nil t)
+     ("pyls.plugins.pyls_black.enabled" t t)
+     ("pyls.plugins.pyls_isort.enabled" t t)))
+  :hook
+  ((python-mode . lsp)))

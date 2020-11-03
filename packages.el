@@ -58,3 +58,5 @@
 (package! eww-layer
   :recipe (:host github :repo "coljamkop/eww-layer"
            :files ("funcs.el" "packages.el")))
+
+(package! dap-mode)
