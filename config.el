@@ -68,7 +68,32 @@
 ;; they are implemented.
 
 
-(add-to-list 'auto-mode-alist '("\\.beancounter\\'" . beancount-mode))
+(add-hook! 'clojure-mode-hook (paredit-mode))
+(add-hook! 'clojurescript-mode-hook (paredit-mode))
+
+(use-package! beancount
+  :defer t
+  :bind
+  ("C-M-b" . (lambda ()
+               (interactive)
+               (find-file "~/finances/ledger.beancounter")))
+  :mode
+  ("\\.bean\\(?:count\\)?\\'" . beancount-mode)
+  :config
+  (setq beancount-accounts-files
+        (directory-files "~/finances/"
+                         'full
+                         (rx ".bean" eos))))
+
+(add-hook! beancount-mode
+  (outline-minor-mode))
+
+(map! :after outline-minor-mode
+      :n "g n" #'outline-next-heading
+      :n "g p" #'outline-previous-heading
+      :n "z m" #'outline-hide-leaves
+      :n "z r" #'outline-show-leaves)
+
 (after! dap-python
   (setq dap-auto-show-output nil)
 
