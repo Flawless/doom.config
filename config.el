@@ -76,7 +76,7 @@
   :bind
   ("C-M-b" . (lambda ()
                (interactive)
-               (find-file "~/finances/ledger.beancounter")))
+               (find-file "~/finances/ledger.bean")))
   :mode
   ("\\.bean\\(?:count\\)?\\'" . beancount-mode)
   :config
