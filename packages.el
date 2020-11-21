@@ -49,8 +49,8 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;(unpin! t)
 (package! beancount
- :recipe (:host github :repo "beancount/beancount"
-          :files ("editors/emacs/beancount.el")))
+  :recipe (:host github :repo "cnsunyour/beancount.el"))
+
 (package! openapi-yaml-mode
   :recipe (:host github :repo "magoyette/openapi-yaml-mode"
            :files ("openapi-yaml-mode.el")))

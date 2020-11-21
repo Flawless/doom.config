@@ -231,3 +231,6 @@
      ("pyls.plugins.pyls_isort.enabled" t t)))
   :hook
   ((python-mode . lsp)))
+
+(after! cider-mode
+  (setq cider-save-file-on-load t))
