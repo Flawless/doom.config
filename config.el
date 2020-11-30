@@ -233,4 +233,5 @@
   ((python-mode . lsp)))
 
 (after! cider-mode
+  (setq cider-auto-test-mode t)
   (setq cider-save-file-on-load t))
