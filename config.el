@@ -67,16 +67,37 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
+(setq-default fill-column 100)
+
+(after! eshell-mode
+  (eshell/addpath "home/flawless/tools/arcanist/bin"))
+
+(defun clojure-styles ()
+  (put-clojure-indent 're-frame.core/reg-event-fx 1)
+  (put-clojure-indent 're-frame.core/reg-fx 1)
+  (put-clojure-indent 'rf/reg-event-fx 1)
+  (put-clojure-indent 'rf/reg-fx 1)
+  (put-clojure-indent 're-frame.core/reg-event-db 1)
+  (put-clojure-indent 're-frame.core/reg-db 1)
+  (put-clojure-indent 'rf/reg-event-db 1)
+  (put-clojure-indent 'rf/reg-db 1)
+  (put-clojure-indent 're-frame.core/reg-sub 1)
+  (put-clojure-indent 'rf/reg-sub 1)
+  (put-clojure-indent 'component-style-def 1)
+  (put-clojure-indent 'reg-view 1)
+  (put-clojure-indent 'reg-modal 1)
+
+  (put-clojure-indent 'attempt-all 1)
+  (put-clojure-indent 'try-all 1))
+
+(add-hook! 'clojure-mode-hook (clojure-styles))
+(add-hook! 'clojurescript-mode-hook (clojure-styles))
 
 (add-hook! 'clojure-mode-hook (paredit-mode))
 (add-hook! 'clojurescript-mode-hook (paredit-mode))
 
 (use-package! beancount
   :defer t
-  :bind
-  ("C-M-b" . (lambda ()
-               (interactive)
-               (find-file "~/finances/ledger.bean")))
   :mode
   ("\\.bean\\(?:count\\)?\\'" . beancount-mode)
   :config
