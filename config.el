@@ -256,3 +256,20 @@
 (after! cider-mode
   (setq cider-auto-test-mode t)
   (setq cider-save-file-on-load t))
+
+;; (use-package! magit-arcanist
+;;   :config
+;;   (progn
+;;     (setq magit-arcanist-key (kbd "^"))
+;;     (magit-arcanist-enable)))
+
+(use-package! flycheck-clj-kondo
+  :after (clojure-mode clojurescript-mode))
+
+(defun make-eww-link (url)
+  (eww-browse-url url))
+
+(after! org
+  (org-add-link-type "eww" #'make-eww-link)
+  (setq org-superstar-headline-bullets-list '("⁖" "◉" "○" "✸" "✿")
+        org-todo-keywords '((sequence "WAIT" "TODO" "STRT" "CTRL" "HOLD" "|" "DONE" "KILL"))))

@@ -59,4 +59,13 @@
   :recipe (:host github :repo "coljamkop/eww-layer"
            :files ("funcs.el" "packages.el")))
 
+(package! magit-arcanist
+  :recipe (:host github :repo "sideshowcoder/magit-arcanist"))
+
 (package! dap-mode)
+
+(package! evil-mc)
+
+(package! flycheck-clj-kondo)
+
+(package! hide-comnt)
