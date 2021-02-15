@@ -43,7 +43,9 @@
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/org/")
-(setq org-agenda-files '("~/org"))
+(setq org-agenda-files (directory-files-recursively "~/org/" "\\.org$"))
+(setq org-agenda-start-on-weekday 1)
+(setq calendar-week-start-day 1)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -273,3 +275,8 @@
   (org-add-link-type "eww" #'make-eww-link)
   (setq org-superstar-headline-bullets-list '("⁖" "◉" "○" "✸" "✿")
         org-todo-keywords '((sequence "WAIT" "TODO" "STRT" "CTRL" "HOLD" "|" "DONE" "KILL"))))
+
+(setq org-journal-file-type 'weekly
+      org-journal-date-prefix "* "
+      org-journal-date-format "%a, %Y-%m-%d.org"
+      org-journal-file-format "%V.org")
