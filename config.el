@@ -278,5 +278,5 @@
 
 (setq org-journal-file-type 'weekly
       org-journal-date-prefix "* "
-      org-journal-date-format "%a, %Y-%m-%d.org"
+      org-journal-date-format "%a, %Y-%m-%d"
       org-journal-file-format "%V.org")
