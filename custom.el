@@ -130,3 +130,5 @@ current buffer's, reload dir-locals."
                               (file-name-nondirectory (buffer-file-name))))
               (add-hook (make-variable-buffer-local 'after-save-hook)
                         'my-reload-dir-locals-for-all-buffer-in-this-directory))))
+(put 'scroll-left 'disabled nil)
+(put 'magit-clean 'disabled nil)

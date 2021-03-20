@@ -272,11 +272,18 @@
   (eww-browse-url url))
 
 (after! org
+  (auto-fill-mode)
   (org-add-link-type "eww" #'make-eww-link)
   (setq org-superstar-headline-bullets-list '("⁖" "◉" "○" "✸" "✿")
-        org-todo-keywords '((sequence "WAIT" "TODO" "STRT" "CTRL" "HOLD" "|" "DONE" "KILL"))))
+        org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "STRT(s)" "CTRL(c)" "HOLD(h)" "|" "DONE(d)" "KILL(k)"))
+        org-tag-alist '(("important" . ?i)
+                        ("urgent"    . ?u))
+        org-agenda-custom-commands '(("1" "Q1" tags-todo "+important+urgent")
+                                     ("2" "Q2" tags-todo "+important-urgent")
+                                     ("3" "Q3" tags-todo "-important+urgent")
+                                     ("4" "Q4" tags-todo "-important-urgent")))
 
-(setq org-journal-file-type 'weekly
-      org-journal-date-prefix "* "
-      org-journal-date-format "%a, %Y-%m-%d"
-      org-journal-file-format "%V.org")
+  (setq org-journal-file-type 'weekly
+        org-journal-date-prefix "* "
+        org-journal-date-format "%a, %Y-%m-%d"
+        org-journal-file-format "%V.org"))

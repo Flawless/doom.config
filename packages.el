@@ -69,3 +69,7 @@
 (package! flycheck-clj-kondo)
 
 (package! hide-comnt)
+
+(package! dired-subtree)
+
+(package! flycheck-projectile)
