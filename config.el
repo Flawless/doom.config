@@ -43,6 +43,7 @@
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/org/")
+(setq org-books-file (concat org-directory "books.org"))
 (setq org-agenda-files (directory-files-recursively "~/org/" "\\.org$"))
 (setq org-agenda-start-on-weekday 1)
 (setq calendar-week-start-day 1)
@@ -92,11 +93,26 @@
   (put-clojure-indent 'attempt-all 1)
   (put-clojure-indent 'try-all 1))
 
-(add-hook! 'clojure-mode-hook (clojure-styles))
-(add-hook! 'clojurescript-mode-hook (clojure-styles))
+(defun clojure-init ()
+  (clojure-styles)
+  (paredit-mode)
+  (centered-cursor-mode))
 
-(add-hook! 'clojure-mode-hook (paredit-mode))
-(add-hook! 'clojurescript-mode-hook (paredit-mode))
+(add-hook! 'clojure-mode-hook (clojure-init))
+(add-hook! 'clojurescript-mode-hook (clojure-init))
+
+(setq gc-cons-threshold (* 1024 1024 1024)
+      read-process-output-max (* 50 1024 1024)
+      lsp-file-watch-threshold 10000
+      lsp-idle-delay .500
+      company-minimum-prefix-length 1
+      lsp-log-io nil
+      lsp-lens-enable nil
+      lsp-ui-sideline-enable t
+      lsp-ui-sideline-show-hover nil
+      lsp-eldoc-enable-hover nil
+      lsp-signature-auto-activate nil
+      lsp-enable-indentation nil)
 
 (use-package! beancount
   :defer t
@@ -108,7 +124,9 @@
                          'full
                          (rx ".bean" eos))))
 
-(add-hook! beancount-mode
+(add-hook! beancount```
+
+
   (outline-minor-mode))
 
 (map! :after outline-minor-mode
@@ -259,6 +277,8 @@
   (setq cider-auto-test-mode t)
   (setq cider-save-file-on-load t))
 
+(setq magit-save-repository-buffers t)
+
 ;; (use-package! magit-arcanist
 ;;   :config
 ;;   (progn
@@ -268,22 +288,148 @@
 (use-package! flycheck-clj-kondo
   :after (clojure-mode clojurescript-mode))
 
-(defun make-eww-link (url)
-  (eww-browse-url url))
-
 (after! org
   (auto-fill-mode)
-  (org-add-link-type "eww" #'make-eww-link)
   (setq org-superstar-headline-bullets-list '("⁖" "◉" "○" "✸" "✿")
         org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "STRT(s)" "CTRL(c)" "HOLD(h)" "|" "DONE(d)" "KILL(k)"))
         org-tag-alist '(("important" . ?i)
-                        ("urgent"    . ?u))
+                        ("urgent"    . ?u)
+                        ("arvl"      . ?a))
         org-agenda-custom-commands '(("1" "Q1" tags-todo "+important+urgent")
                                      ("2" "Q2" tags-todo "+important-urgent")
                                      ("3" "Q3" tags-todo "-important+urgent")
                                      ("4" "Q4" tags-todo "-important-urgent")))
+  (setq org-capture-templates
+        '(("b" "Book" entry (file org-books-file)
+           "* %^{TITLE}\n:PROPERTIES:\n:ADDED: %<[%Y-%02m-%02d]>\n:END:%^{AUTHOR}p\n%?" :empty-lines 1)
+          ("t" "Todo" entry (file+headline "~/org/gtd.org" "Tasks")
+           "* TODO %?\n %i\n %a")))
 
   (setq org-journal-file-type 'weekly
         org-journal-date-prefix "* "
         org-journal-date-format "%a, %Y-%m-%d"
         org-journal-file-format "%V.org"))
+
+(defun my-org-clocktable-formatter (ipos tables params)
+  "Custom formatter for org-mode clocktables which groups by category rather than file.
+It uses `org-clock-clocktable-formatter' for the insertion of the
+table after sorting the items into tables based on an items
+category property. Thus all parameters supported by
+`org-clock-clocktable-formatter' are supported. To use this to
+sort a clocktable add `:properties (\"CATEGORY\") :formatter
+my-org-clocktable-formatter' to that clocktable's arguments."
+  (let* ((tt (-flatten-n 1 (-map #'-last-item tables)))
+         (formatter (or org-clock-clocktable-formatter
+                        'org-clocktable-write-default))
+         (newprops (remove "CATEGORY" (plist-get params :properties)))
+         (newparams (plist-put (plist-put params :multifile t) :properties newprops))
+         newtables)
+
+    ;; Compute net clocked time for each item
+    (setq tt
+          (--map-indexed
+           (let* ((it-level (car it))
+                  (it-time (nth 4 it))
+                  (it-subtree (--take-while (< it-level (car it))
+                                            (-drop (1+ it-index) tt)))
+                  (it-children (--filter (= (1+ it-level) (car it))
+                                         it-subtree)))
+             (-replace-at 4 (- it-time (-sum (--map (nth 4 it) it-children)))
+                          it))
+           tt))
+
+    ;; Add index (ie id) and indexes of parents (these are needed in the
+    ;; sorting step). This can probably be written more functionally using --reduce?
+    ;; At least without having to modify hist.
+    (setq tt
+          (let (hist)
+            (--map-indexed (let* ((it-level (car it))
+                                  (it-hist (-drop (- (length hist)
+                                                     it-level -1)
+                                                  hist)))
+                             (setq hist (cons it-index it-hist))
+                             (cons it-index (cons it-hist it)))
+                           tt)))
+
+    ;; Now comes the important phase: sorting, where we copy items with >0 net time
+    ;; into newtables based on their category, and we copy their parents when
+    ;; appropriate.
+    (--each tt (let* ((it-hist (nth 1 it))
+                      (it-time (nth 6 it))
+                      (it-prop (-last-item it))
+                      (it-cat (alist-get "CATEGORY" it-prop nil nil #'string=))
+                      ;; Find the index of the table for category: it-cat or if
+                      ;; it doesn't yet exist add it to the start of newtables.
+                      (cat-pos (or
+                                (--find-index (string= (car it) it-cat) newtables)
+                                (progn (push (list it-cat nil) newtables) 0)))
+                      (cat-members (-map #'car (-last-item (nth cat-pos newtables))))
+                      (it-parent
+                       (or (--find-index (member it
+                                                 cat-members)
+                                         it-hist)
+                           (length it-hist)))
+                      (hist-to-add
+                       ;; replace the time of copied parents with 0 since if a
+                       ;; parents is being copied and has time >0 then it has
+                       ;; already been placed in the table for a different
+                       ;; category. ie. We don't want time double counted.
+                       (--map (-replace-at 6 0 (nth it tt))
+                              (-take it-parent it-hist))))
+
+                 (when (not (= 0 it-time))
+                   (setf (-last-item (nth cat-pos newtables))
+                         (append (cons it hist-to-add)
+                                 (-last-item (nth cat-pos newtables)))))))
+
+    (--each newtables (setf (-last-item it) (reverse (-last-item it))))
+    ;; Cleanup, remove ids and list of parents, as they are no longer needed.
+    (setq newtables
+          (--map (list (car it) 0 (--map (-drop 2 it) (-last-item it))) newtables))
+
+    ;; Recompute the total times for each node.
+    ;; (replace this with --each and setf?)
+    (setq newtables
+          (--map (let* ((it-children (sum-direct-children-org 1 (-last-item it)))
+                        (it-total-time (-sum
+                                        (--map (nth 4 it)
+                                               (--filter (= 1 (car it))
+                                                         it-children)))))
+                   (list (car it) it-total-time it-children))
+                 newtables))
+    ;; Actually insert the clocktable now.
+    (funcall formatter ipos newtables newparams)
+    ;; Replace "File" with "Category" in the "file" column and "*File time*" with "*
+    ;; Category time*" in the table.
+    (org-table-goto-line 1)
+    (org-table-blank-field)
+    (insert "Category")
+    (org-table-align)
+    (let ((n 2))
+      (while (org-table-goto-line n)
+        (org-table-next-field)
+        ;; This won't work if there are addition columns eg. Property column.
+        ;; Instead look forward along each line to see if that regexp is matched?
+        (when (looking-at "\\*File time\\* .*\| *\\*.*[0-9]:[0-9][0-9]\\*")
+          (org-table-blank-field)
+          (insert "*Category time*")
+          (org-table-align))
+        (incf n)))))
+
+(defun sum-direct-children-org (level children)
+  "Update the time LEVEL nodes recursively to be the sum of the times of its children.
+Used in `my-org-clocktable-formatter' to go from net times back to tatal times."
+  (let ((subtrees (-partition-before-pred (lambda (it) (= level (car it))) children)))
+    (-flatten-n 1
+                (--map (let ((it-children (sum-direct-children-org (1+ level)
+                                                                   (cdr it))))
+                         (cons (--update-at
+                                4 (+ it
+                                     (-sum
+                                      (--map (nth 4 it)
+                                             (--filter (= (1+ level)
+                                                          (car it))
+                                                       it-children))))
+                                (car it))
+                               it-children))
+                       subtrees))))

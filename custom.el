@@ -3,102 +3,13 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(auth-source-save-behavior nil)
- '(safe-local-variable-values
-   '((eval progn
-           (defun fix-cider-lein-profile
-               (orig-fun &rest args)
-             (let
-                 ((repl
-                   (ido-completing-read "Select ClojureScript REPL:"
-                                        '("dev" "debug" "test"))))
-               (setq cider-figwheel-main-default-options
-                     (format ":%s" repl))
-               (setq cider-lein-parameters
-                     (format "with-profile +%s repl" repl))
-               (let
-                   ((res
-                     (apply orig-fun args)))
-                 res)))
-           (advice-add 'cider-jack-in-cljs :around #'fix-cider-lein-profile)
-           (advice-add 'cider-jack-in-clj&cljs :around #'fix-cider-lein-profile))
-     (eval cl-flet
-           ((fix-cider-lein-profile
-             (orig-fun &rest args)
-             (let
-                 ((repl
-                   (ido-completing-read "Select ClojureScript REPL:"
-                                        '("dev" "debug" "test"))))
-               (setq cider-figwheel-main-default-options
-                     (format ":%s" repl))
-               (setq cider-lein-parameters
-                     (format "with-profile +%s repl" repl))
-               (let
-                   ((res
-                     (apply orig-fun args)))
-                 res))))
-           (advice-add 'cider-jack-in-cljs :around #'fix-cider-lein-profile)
-           (advice-add 'cider-jack-in-clj&cljs :around #'fix-cider-lein-profile))
-     (eval cl-labels
-           ((fix-cider-lein-profile
-             (orig-fun &rest args)
-             (let
-                 ((repl
-                   (ido-completing-read "Select ClojureScript REPL:"
-                                        '("dev" "debug" "test"))))
-               (setq cider-figwheel-main-default-options
-                     (format ":%s" repl))
-               (setq cider-lein-parameters
-                     (format "with-profile +%s repl" repl))
-               (let
-                   ((res
-                     (apply orig-fun args)))
-                 res))))
-           (advice-add 'cider-jack-in-cljs :around #'fix-cider-lein-profile)
-           (advice-add 'cider-jack-in-clj&cljs :around #'fix-cider-lein-profile))
-     (eval cl-flet
-           ((fix-cider-lein-profile
-             (orig-fun &rest args)
-             ((let
-                  ((repl
-                    (ido-completing-read "Select ClojureScript REPL:"
-                                         '("dev" "debug" "test"))))
-                (setq cider-figwheel-main-default-options
-                      (format ":%s" repl))
-                (setq cider-lein-parameters
-                      (format "with-profile +%s repl" repl))
-                (let
-                    ((res
-                      (apply orig-fun args)))
-                  res)))))
-           (advice-add 'cider-jack-in-cljs :around #'fix-cider-lein-profile)
-           (advice-add 'cider-jack-in-clj&cljs :around #'fix-cider-lein-profile))
-     (eval let
-           ((fix-cider-lein-profile
-             (lambda
-               (orig-fun &rest args)
-               (let
-                   ((repl
-                     (ido-completing-read "Select ClojureScript REPL:"
-                                          '("dev" "debug" "test"))))
-                 (setq cider-figwheel-main-default-options
-                       (format ":%s" repl))
-                 (setq cider-lein-parameters
-                       (format "with-profile +%s repl" repl))
-                 (let
-                     ((res
-                       (apply orig-fun args)))
-                   res)))))
-           (advice-add 'cider-jack-in-cljs :around #'fix-cider-lein-profile)
-           (advice-add 'cider-jack-in-clj&cljs :around #'fix-cider-lein-profile))
-     (cider-clojure-cli-global-options . "-A:env/dev")
-     (cider-clojurescript-cli-global-options . "-A:dev")
-     (clojurec-mode
-      (cider-clojure-cli-global-options . "-A:fig"))
-     (cider-default-cljs-repl . shadow)
-     (clojurescript-mode
-      (cider-clojure-cli-global-options . "-A:fig"))
-     (cider-shadow-cljs-default-options . "app"))))
+ '(package-archives
+   '(("gnu" . "https://elpa.gnu.org/packages/")
+     ("melpa" . "https://melpa.org/packages/")
+     ("org" . "https://orgmode.org/elpa/")
+     ("emacswiki" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/emacswiki/")))
+ '(package-enable-at-startup nil)
+ '(package-selected-packages '(paredit which-key use-package general evil-collection)))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
