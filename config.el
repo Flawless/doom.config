@@ -96,6 +96,7 @@
 (defun clojure-init ()
   (clojure-styles)
   (rainbow-delimiters-mode)
+  (rainbow-identifiers-mode)
   (paredit-mode)
   (centered-cursor-mode))
 
