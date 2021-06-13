@@ -50,26 +50,18 @@
 ;(unpin! t)
 (package! beancount
   :recipe (:host github :repo "cnsunyour/beancount.el"))
-
 (package! openapi-yaml-mode
   :recipe (:host github :repo "magoyette/openapi-yaml-mode"
            :files ("openapi-yaml-mode.el")))
-
 (package! magit-arcanist
   :recipe (:host github :repo "sideshowcoder/magit-arcanist"))
-
 (package! dap-mode)
-
 (package! evil-mc)
-
 (package! flycheck-clj-kondo)
-
 (package! hide-comnt)
-
 (package! dired-subtree)
-
 (package! flycheck-projectile)
-
 (package! centered-cursor-mode)
-
 (package! rainbow-identifiers)
+(package! org-mru-clock)
+(package! dired-du)

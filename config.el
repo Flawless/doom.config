@@ -38,14 +38,20 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-gruvbox)
+;; (setq doom-theme 'doom-gruvbox)
+(setq doom-theme 'doom-one-light)
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/org/")
 (setq org-books-file (concat org-directory "books.org"))
-(setq org-agenda-files (directory-files-recursively "~/org/" "\\.org$"))
-(setq org-agenda-start-on-weekday 1)
+(setq org-agenda-files (directory-files-recursively "~/org/" "\\.org$")
+      org-agenda-start-on-weekday 1
+      ;; org-agenda-prefix-format '((agenda . " %i %-12:c%?-12t% s")
+      ;;                            (todo . " %i %-12:b%-12:c")
+      ;;                            (tags . " %i %-12:c")
+      ;;                            (search . " %i %-12:c"))
+      )
 (setq calendar-week-start-day 1)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
@@ -74,6 +80,17 @@
 
 (after! eshell-mode
   (eshell/addpath "home/flawless/tools/arcanist/bin"))
+
+(defun fix-cider-lein-profile (orig-fun &rest args)
+  (let ((repl (ido-completing-read "Select ClojureScript REPL:"
+                                   '("dev" "debug" "test"))))
+    (setq cider-figwheel-main-default-options (format ":%s" repl))
+    (setq cider-lein-parameters (format "with-profile +%s repl" repl))
+    (let ((res (apply orig-fun args)))
+      res)))
+
+(advice-add 'cider-jack-in-cljs :around #'fix-cider-lein-profile)
+(advice-add 'cider-jack-in-clj&cljs :around #'fix-cider-lein-profile)
 
 (defun clojure-styles ()
   (put-clojure-indent 're-frame.core/reg-event-fx 1)
@@ -300,19 +317,23 @@
         org-agenda-custom-commands '(("1" "Q1" tags-todo "+important+urgent")
                                      ("2" "Q2" tags-todo "+important-urgent")
                                      ("3" "Q3" tags-todo "-important+urgent")
-                                     ("4" "Q4" tags-todo "-important-urgent")))
+                                     ("4" "Q4" tags-todo "-important-urgent"))
+
+        ;; org-duration-units '(("min" . 1)
+        ;;                      ("h" . 60)
+        ;;                      ("d" . ,(* 60 8))
+        ;;                      ("w" . ,(* 60 8 5))
+        ;;                      ("m" . ,(* 60 8 5 4))
+        ;;                      ("y" . ,(* 60 8 5 4 10)))
+        )
+
   (setq org-capture-templates
         '(("b" "Book" entry (file org-books-file)
            "* %^{TITLE}\n:PROPERTIES:\n:ADDED: %<[%Y-%02m-%02d]>\n:END:%^{AUTHOR}p\n%?" :empty-lines 1)
           ("t" "Todo" entry (file+headline "~/org/gtd.org" "Tasks")
-           "* TODO %?\n %i\n %a")))
+           "* TODO %?\n %i\n %a"))))
 
-  (setq org-journal-file-type 'weekly
-        org-journal-date-prefix "* "
-        org-journal-date-format "%a, %Y-%m-%d"
-        org-journal-file-format "%V.org")
-
-  (defun my-org-clocktable-formatter (ipos tables params)
+(defun my-org-clocktable-formatter (ipos tables params)
     "Custom formatter for org-mode clocktables which groups by category rather than file.
 It uses `org-clock-clocktable-formatter' for the insertion of the
 table after sorting the items into tables based on an items
@@ -416,7 +437,16 @@ my-org-clocktable-formatter' to that clocktable's arguments."
             (org-table-blank-field)
             (insert "*Category time*")
             (org-table-align))
-          (incf n))))))
+          (incf n)))))
+
+(add-hook! 'org-clock-in-hook (save-buffer))
+(add-hook! 'org-clock-out-hook (save-buffer))
+(add-hook! 'org-mode-hook '(lambda () (setq fill-column 120)))
+(add-hook! 'org-mode-hook 'auto-fill-mode)
+
+;; (map! :leader
+;;       (:prefix-map ("n" . "notes")
+;;        :desc "Toggle last org-clock" "c" #'org-mru-clock-in))
 
 (defun sum-direct-children-org (level children)
   "Update the time LEVEL nodes recursively to be the sum of the times of its children.
